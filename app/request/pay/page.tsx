@@ -257,9 +257,35 @@ function PayRequestContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center px-6">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Connect Wallet</h2>
-          <p className="text-gray-600 mb-6">Please connect your wallet to pay this request</p>
-          <ConnectButton />
+          <div className="text-center mb-6">
+            <div className="text-5xl mb-4">💸</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Request</h2>
+            <p className="text-gray-600">You&apos;ve received a payment request</p>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4">
+            <div>
+              <div className="text-sm text-gray-600 mb-1">Amount</div>
+              <div className="text-3xl font-bold text-gray-900">${amount} USDT</div>
+            </div>
+
+            {memo && (
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Description</div>
+                <div className="text-gray-900">{memo}</div>
+              </div>
+            )}
+
+            <div>
+              <div className="text-sm text-gray-600 mb-1">Recipient</div>
+              <div className="font-mono text-sm text-gray-900">{shortenAddress(recipient || '')}</div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 text-center">Connect your wallet to complete this payment</p>
+            <ConnectButton />
+          </div>
         </div>
       </div>
     );

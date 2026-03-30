@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { NavConnectButton } from '@/components/NavConnectButton';
+import { AppNav } from '@/components/AppNav';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -163,12 +163,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
-      <nav className="p-6 flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold text-white">
-          Themis
-        </Link>
-        <NavConnectButton />
-      </nav>
+      <AppNav />
 
       <main className="container mx-auto px-6 py-12">
         <div className="max-w-6xl mx-auto">

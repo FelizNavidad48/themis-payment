@@ -11,7 +11,7 @@ export function NavConnectButton() {
     setMounted(true);
     const timer = setTimeout(() => {
       setShowButton(true);
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 

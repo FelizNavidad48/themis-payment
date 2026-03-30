@@ -282,9 +282,13 @@ function PayRequestContent() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600 text-center">Connect your wallet to complete this payment</p>
-            <ConnectButton />
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">Connect your wallet to complete this payment</p>
+              <div className="flex justify-center">
+                <ConnectButton />
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -9,17 +9,12 @@ import { useEffect, useState } from 'react';
 export default function Home() {
   const { isConnected, isConnecting, isReconnecting } = useAccount();
   const [mounted, setMounted] = useState(false);
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const timer = setTimeout(() => {
-      setInitialCheckDone(true);
-    }, 500);
-    return () => clearTimeout(timer);
   }, []);
 
-  const isLoading = !mounted || isConnecting || isReconnecting || (!isConnected && !initialCheckDone);
+  const isLoading = !mounted || isConnecting || isReconnecting;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">

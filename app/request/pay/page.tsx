@@ -272,14 +272,14 @@ function PayRequestContent() {
           <div className="text-6xl mb-4 text-center">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Wrong Network</h2>
           <p className="text-gray-600 mb-4">
-            You're currently on <strong>{chain.name}</strong>. This app only works on <strong>Polygon network</strong>.
+            You&apos;re currently on <strong>{chain.name}</strong>. This app only works on <strong>Polygon network</strong>.
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <p className="text-sm font-medium text-blue-900 mb-2">How to switch:</p>
             <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
               <li>Open your wallet</li>
               <li>Click the network dropdown</li>
-              <li>Select "Polygon Mainnet"</li>
+              <li>Select &quot;Polygon Mainnet&quot;</li>
               <li>Refresh this page</li>
             </ol>
           </div>
@@ -439,7 +439,7 @@ function PayRequestContent() {
               <ul className="text-sm text-blue-700 space-y-1">
                 <li>• You need USDT on <strong>Polygon network</strong> (not Ethereum)</li>
                 <li>• You need MATIC for gas fees (~$0.01)</li>
-                <li>• Your wallet may show "Unknown" token - this is normal for USDT contract calls</li>
+                <li>• Your wallet may show &quot;Unknown&quot; token - this is normal for USDT contract calls</li>
                 <li>• Transaction will still send {amount} USDT correctly</li>
               </ul>
             </div>
@@ -454,7 +454,12 @@ export default function PayRequest() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-gray-600">Loading payment request...</p>
+          </div>
+        </div>
       </div>
     }>
       <PayRequestContent />

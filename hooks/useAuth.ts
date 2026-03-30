@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount, useSignMessage, useWalletClient, useSwitchChain } from 'wagmi';
 import { SiweMessage } from 'siwe';
 import { polygon } from 'wagmi/chains';
@@ -10,18 +10,48 @@ export function useAuth() {
   const { switchChainAsync } = useSwitchChain();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const mountedRef = useRef(true);
+  const checkAuthTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
-    checkAuth();
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (checkAuthTimeoutRef.current) {
+        clearTimeout(checkAuthTimeoutRef.current);
+      }
+    };
   }, []);
 
+  useEffect(() => {
+    if (isConnected && address) {
+      checkAuth();
+    } else {
+      setIsCheckingAuth(false);
+      setIsAuthenticated(false);
+    }
+  }, [isConnected, address]);
+
   const checkAuth = async () => {
+    if (!mountedRef.current) return;
+
+    setIsCheckingAuth(true);
     try {
       const response = await fetch('/api/auth/me');
       const data = await response.json();
-      setIsAuthenticated(data.authenticated);
+
+      if (mountedRef.current) {
+        setIsAuthenticated(data.authenticated);
+      }
     } catch (error) {
-      setIsAuthenticated(false);
+      if (mountedRef.current) {
+        setIsAuthenticated(false);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsCheckingAuth(false);
+      }
     }
   };
 
@@ -32,13 +62,10 @@ export function useAuth() {
 
     setIsAuthenticating(true);
     try {
-      // Make sure we're on Polygon network
       if (chain?.id !== polygon.id && switchChainAsync) {
-        console.log('Switching to Polygon network...');
         await switchChainAsync({ chainId: polygon.id });
       }
 
-      // Get the current connected account from MetaMask
       let currentAddress = address;
 
       if (typeof window !== 'undefined' && window.ethereum) {
@@ -46,15 +73,12 @@ export function useAuth() {
         currentAddress = accounts[0];
       }
 
-      console.log('Address from useAccount:', address);
-      console.log('Address from MetaMask:', currentAddress);
-
       const nonceResponse = await fetch('/api/auth/nonce');
       const { nonce } = await nonceResponse.json();
 
       const siweMessage = new SiweMessage({
         domain: window.location.host,
-        address: currentAddress, // Use the address directly from MetaMask
+        address: currentAddress,
         statement: 'Sign in to Themis Payment',
         uri: window.location.origin,
         version: '1',
@@ -64,23 +88,15 @@ export function useAuth() {
 
       const messageText = siweMessage.prepareMessage();
 
-      console.log('About to request signature for message:', messageText);
-      console.log('Address:', address);
-
       const signature = await signMessageAsync({
         message: messageText,
       });
-
-      console.log('Signature received:', signature);
-
-      console.log('Sending message text to verify:', messageText);
-      console.log('Signature:', signature);
 
       const verifyResponse = await fetch('/api/auth/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: messageText, // Send the EXACT text that was signed
+          message: messageText,
           signature,
         }),
       });
@@ -89,14 +105,19 @@ export function useAuth() {
         throw new Error('Verification failed');
       }
 
-      setIsAuthenticated(true);
+      if (mountedRef.current) {
+        setIsAuthenticated(true);
+      }
       return true;
     } catch (error) {
-      console.error('Sign in error:', error);
-      setIsAuthenticated(false);
+      if (mountedRef.current) {
+        setIsAuthenticated(false);
+      }
       throw error;
     } finally {
-      setIsAuthenticating(false);
+      if (mountedRef.current) {
+        setIsAuthenticating(false);
+      }
     }
   };
 
@@ -112,6 +133,7 @@ export function useAuth() {
   return {
     isAuthenticated,
     isAuthenticating,
+    isCheckingAuth,
     signIn,
     signOut,
     address,

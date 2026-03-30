@@ -32,7 +32,7 @@ type Transaction = {
 
 export default function Dashboard() {
   const { address, isConnected } = useAccount();
-  const { isAuthenticated, signIn, isAuthenticating } = useAuth();
+  const { isAuthenticated, signIn, isAuthenticating, isCheckingAuth } = useAuth();
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,8 +41,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (isAuthenticated && address) {
       loadData();
+    } else if (!isCheckingAuth) {
+      setIsLoading(false);
     }
-  }, [isAuthenticated, address]);
+  }, [isAuthenticated, address, isCheckingAuth]);
 
   const loadData = async () => {
     if (!address) return;
@@ -70,6 +72,34 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
+        <nav className="p-6 flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-white">
+            Themis
+          </Link>
+          <div className="w-40 h-10 bg-white/10 rounded-xl animate-pulse"></div>
+        </nav>
+        <main className="container mx-auto px-6 py-12">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
+              <div className="mb-8">
+                <div className="h-8 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+              </div>
+              <div className="h-12 bg-gray-200 rounded w-64 mb-6 animate-pulse"></div>
+              <div className="space-y-4">
+                <div className="h-40 bg-gray-100 rounded-xl animate-pulse"></div>
+                <div className="h-40 bg-gray-100 rounded-xl animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (

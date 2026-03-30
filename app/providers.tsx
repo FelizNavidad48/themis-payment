@@ -13,6 +13,8 @@ function makeQueryClient() {
     defaultOptions: {
       queries: {
         staleTime: 60 * 1000,
+        retry: 1,
+        refetchOnWindowFocus: false,
       },
     },
   });
@@ -30,13 +32,40 @@ function getQueryClient() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false);
   const queryClient = getQueryClient();
+
+  React.useEffect(() => {
+    setMounted(true);
+
+    const originalError = console.error;
+    console.error = (...args) => {
+      if (
+        typeof args[0] === 'string' &&
+        (args[0].includes('No matching key') ||
+         args[0].includes('history:'))
+      ) {
+        return;
+      }
+      originalError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
 
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={darkTheme()}>
-          {children}
+          {mounted ? (
+            children
+          ) : (
+            <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center">
+              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </div>
+          )}
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

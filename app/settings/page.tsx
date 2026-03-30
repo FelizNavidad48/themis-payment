@@ -17,23 +17,27 @@ type UserSettings = {
 
 export default function Settings() {
   const { address, isConnected } = useAccount();
-  const { isAuthenticated, signIn, isAuthenticating } = useAuth();
+  const { isAuthenticated, signIn, isAuthenticating, isCheckingAuth } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [customSlug, setCustomSlug] = useState('');
   const [brandingColor, setBrandingColor] = useState('#6366f1');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
   useEffect(() => {
     if (isAuthenticated && address) {
       loadSettings();
+    } else if (!isCheckingAuth) {
+      setIsLoadingSettings(false);
     }
-  }, [isAuthenticated, address]);
+  }, [isAuthenticated, address, isCheckingAuth]);
 
   const loadSettings = async () => {
     if (!address) return;
 
+    setIsLoadingSettings(true);
     try {
       const { data } = await supabase
         .from('users')
@@ -49,6 +53,8 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Load settings error:', error);
+    } finally {
+      setIsLoadingSettings(false);
     }
   };
 
@@ -85,6 +91,34 @@ export default function Settings() {
       setIsSaving(false);
     }
   };
+
+  if (isCheckingAuth || isLoadingSettings) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
+        <nav className="p-6 flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-white">
+            Themis
+          </Link>
+          <div className="w-40 h-10 bg-white/10 rounded-xl animate-pulse"></div>
+        </nav>
+        <main className="container mx-auto px-6 py-12">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
+              <div className="mb-8">
+                <div className="h-8 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+              </div>
+              <div className="space-y-6">
+                <div className="h-20 bg-gray-100 rounded-xl animate-pulse"></div>
+                <div className="h-20 bg-gray-100 rounded-xl animate-pulse"></div>
+                <div className="h-20 bg-gray-100 rounded-xl animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (

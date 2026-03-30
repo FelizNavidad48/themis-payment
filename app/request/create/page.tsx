@@ -3,22 +3,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import QRCode from 'qrcode';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function CreateRequest() {
   const { address, isConnected } = useAccount();
-  const { isAuthenticated, signIn, isAuthenticating } = useAuth();
-  const router = useRouter();
+  const { isAuthenticated, signIn, isAuthenticating, isCheckingAuth } = useAuth();
   const [amount, setAmount] = useState('');
   const [memo, setMemo] = useState('');
   const [expiresIn, setExpiresIn] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
   const [paymentLink, setPaymentLink] = useState<string>('');
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -77,10 +73,9 @@ export default function CreateRequest() {
         return;
       }
 
-      const { data } = await response.json();
+      await response.json();
 
       setPaymentLink(fullUrl);
-      setQrCodeUrl(qrDataUrl);
     } catch (error) {
       console.error('Create request error:', error);
       alert('Failed to create payment link. Please try again.');
@@ -88,6 +83,27 @@ export default function CreateRequest() {
       setIsCreating(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
+        <nav className="p-6 flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-white">
+            Themis
+          </Link>
+          <div className="w-40 h-10 bg-white/10 rounded-xl animate-pulse"></div>
+        </nav>
+        <div className="flex items-center justify-center px-6 pt-20">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (

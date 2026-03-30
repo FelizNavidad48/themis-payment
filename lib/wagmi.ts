@@ -8,4 +8,5 @@ export const config = getDefaultConfig({
   projectId,
   chains: [polygon],
   ssr: true,
+  multiInjectedProviderDiscovery: false,
 });

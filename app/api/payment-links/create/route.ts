@@ -36,9 +36,9 @@ export async function POST(request: NextRequest) {
     const { amount, memo, shortUrl, qrCodeUrl, expiresAt } = await request.json();
 
     // First, ensure the user exists (using upsert to avoid duplicate key errors)
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await (supabase
       .from('users')
-      .upsert(
+      .upsert as Function)(
         { wallet_address: walletAddress },
         { onConflict: 'wallet_address', ignoreDuplicates: true }
       );

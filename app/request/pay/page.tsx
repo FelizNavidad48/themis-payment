@@ -1,22 +1,79 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useReadContract, useBalance } from 'wagmi';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { USDT_ADDRESS, USDT_ABI } from '@/lib/constants';
 import { parseUSDT, shortenAddress } from '@/utils/format';
+import { supabase } from '@/lib/supabase';
 
 function PayRequestContent() {
   const { address, isConnected, chain } = useAccount();
   const searchParams = useSearchParams();
 
-  const recipient = searchParams.get('recipient') as `0x${string}`;
-  const amount = searchParams.get('amount');
-  const memo = searchParams.get('memo');
-
+  const linkId = searchParams.get('link');
+  const [recipient, setRecipient] = useState<`0x${string}` | null>(searchParams.get('recipient') as `0x${string}`);
+  const [amount, setAmount] = useState<string | null>(searchParams.get('amount'));
+  const [memo, setMemo] = useState<string | null>(searchParams.get('memo'));
+  const [paymentLinkId, setPaymentLinkId] = useState<string | null>(null);
+  const [isLoadingLink, setIsLoadingLink] = useState(!!linkId);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (linkId) {
+      loadPaymentLink();
+    }
+  }, [linkId]);
+
+  const loadPaymentLink = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payment_links')
+        .select('*')
+        .eq('short_url', linkId)
+        .single();
+
+      if (error || !data) {
+        setErrorMessage('Payment link not found');
+        setIsLoadingLink(false);
+        return;
+      }
+
+      if (data.status === 'expired') {
+        setErrorMessage('This payment link has expired');
+        setIsLoadingLink(false);
+        return;
+      }
+
+      if (data.status === 'completed') {
+        setErrorMessage('This payment link has already been paid');
+        setIsLoadingLink(false);
+        return;
+      }
+
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        await supabase
+          .from('payment_links')
+          .update({ status: 'expired' })
+          .eq('id', data.id);
+        setErrorMessage('This payment link has expired');
+        setIsLoadingLink(false);
+        return;
+      }
+
+      setRecipient(data.recipient_wallet_address as `0x${string}`);
+      setAmount(data.amount);
+      setMemo(data.memo);
+      setPaymentLinkId(data.id);
+      setIsLoadingLink(false);
+    } catch (error) {
+      console.error('Load payment link error:', error);
+      setErrorMessage('Failed to load payment link');
+      setIsLoadingLink(false);
+    }
+  };
 
   const amountInWei = amount ? parseUSDT(amount) : BigInt(0);
 
@@ -57,7 +114,7 @@ function PayRequestContent() {
   });
 
   const handlePay = async () => {
-    if (!amount || !recipient) return;
+    if (!amount || !recipient || !address) return;
 
     try {
       setErrorMessage('');
@@ -65,7 +122,6 @@ function PayRequestContent() {
       if (simulateData?.request) {
         writeContract(simulateData.request);
       } else {
-        // Fallback if simulation fails
         const amountInWei = parseUSDT(amount);
         writeContract({
           address: USDT_ADDRESS,
@@ -77,6 +133,38 @@ function PayRequestContent() {
     } catch (err) {
       console.error('Transfer error:', err);
       setErrorMessage('Failed to initiate transfer. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    if (hash && paymentLinkId && address) {
+      recordTransaction();
+    }
+  }, [hash, paymentLinkId, address]);
+
+  const recordTransaction = async () => {
+    if (!hash || !paymentLinkId || !address || !amount) return;
+
+    try {
+      await supabase.from('transactions').insert({
+        payment_link_id: paymentLinkId,
+        sender_wallet_address: address.toLowerCase(),
+        tx_hash: hash,
+        amount: amount,
+        status: 'pending',
+      });
+
+      if (isSuccess) {
+        await supabase.from('transactions')
+          .update({ status: 'completed', confirmed_at: new Date().toISOString() })
+          .eq('tx_hash', hash);
+
+        await supabase.from('payment_links')
+          .update({ status: 'completed' })
+          .eq('id', paymentLinkId);
+      }
+    } catch (error) {
+      console.error('Record transaction error:', error);
     }
   };
 
@@ -98,13 +186,28 @@ function PayRequestContent() {
     return 'Transaction failed. Please try again.';
   };
 
-  if (!recipient || !amount) {
+  if (isLoadingLink) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center px-6">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+          <div className="text-6xl mb-4">⏳</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Payment Request...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (!recipient || !amount || errorMessage) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center px-6">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Request</h2>
-          <p className="text-gray-600 mb-6">This payment request is invalid or expired.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {errorMessage || 'Invalid Request'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {errorMessage || 'This payment request is invalid or expired.'}
+          </p>
           <Link
             href="/"
             className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors"

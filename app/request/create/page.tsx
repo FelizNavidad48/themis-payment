@@ -1,29 +1,88 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import QRCode from 'qrcode';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CreateRequest() {
   const { address, isConnected } = useAccount();
+  const { isAuthenticated, signIn, isAuthenticating } = useAuth();
   const router = useRouter();
   const [amount, setAmount] = useState('');
   const [memo, setMemo] = useState('');
+  const [expiresIn, setExpiresIn] = useState<string>('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [paymentLink, setPaymentLink] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const handleCreateRequest = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (paymentLink && canvasRef.current) {
+      QRCode.toCanvas(
+        canvasRef.current,
+        paymentLink,
+        {
+          width: 256,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF',
+          },
+        },
+        (error) => {
+          if (error) console.error('QR code generation error:', error);
+        }
+      );
+    }
+  }, [paymentLink]);
+
+  const handleCreateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!address || !amount) return;
+    if (!address || !amount || !isAuthenticated) return;
 
-    const params = new URLSearchParams({
-      recipient: address,
-      amount: amount,
-      ...(memo && { memo }),
-    });
+    setIsCreating(true);
+    try {
+      const shortUrl = Math.random().toString(36).substring(2, 10);
+      const expiresAt = expiresIn
+        ? new Date(Date.now() + parseInt(expiresIn) * 60 * 60 * 1000).toISOString()
+        : null;
 
-    router.push(`/request/pay?${params.toString()}`);
+      const qrCanvas = document.createElement('canvas');
+      const fullUrl = `${window.location.origin}/request/pay?link=${shortUrl}`;
+      await QRCode.toCanvas(qrCanvas, fullUrl, { width: 256 });
+      const qrDataUrl = qrCanvas.toDataURL();
+
+      const { data, error } = await supabase.from('payment_links').insert({
+        creator_wallet_address: address.toLowerCase(),
+        recipient_wallet_address: address.toLowerCase(),
+        amount: amount,
+        memo: memo || null,
+        short_url: shortUrl,
+        qr_code_url: qrDataUrl,
+        expires_at: expiresAt,
+        status: 'active',
+      }).select().single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        alert('Failed to create payment link. Please try again.');
+        return;
+      }
+
+      setPaymentLink(fullUrl);
+      setQrCodeUrl(qrDataUrl);
+    } catch (error) {
+      console.error('Create request error:', error);
+      alert('Failed to create payment link. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   if (!isConnected) {
@@ -34,6 +93,108 @@ export default function CreateRequest() {
           <p className="text-gray-600 mb-6">Please connect your wallet to create a payment request</p>
           <ConnectButton />
         </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center px-6">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h2>
+          <p className="text-gray-600 mb-6">Please sign in with your wallet to create payment requests</p>
+          <button
+            onClick={signIn}
+            disabled={isAuthenticating}
+            className="w-full bg-primary-600 text-white py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
+          >
+            {isAuthenticating ? 'Signing In...' : 'Sign In with Wallet'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentLink) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
+        <nav className="p-6 flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-white">
+            Themis
+          </Link>
+          <ConnectButton />
+        </nav>
+
+        <main className="container mx-auto px-6 py-12">
+          <div className="max-w-lg mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-4">✅</div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Payment Link Created!
+                </h1>
+                <p className="text-gray-600">Share this link to receive payment</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-6 mb-6 text-center">
+                <canvas ref={canvasRef} className="mx-auto mb-4" />
+                <p className="text-sm text-gray-600 mb-4">Scan QR code or share link below</p>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm font-mono break-all text-gray-900">{paymentLink}</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(paymentLink);
+                    alert('Link copied to clipboard!');
+                  }}
+                  className="w-full bg-primary-600 text-white py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  Copy Link
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Amount</span>
+                  <span className="font-semibold text-gray-900">{amount} USDT</span>
+                </div>
+                {memo && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Memo</span>
+                    <span className="text-gray-900">{memo}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Status</span>
+                  <span className="text-green-600 font-medium">Active</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setPaymentLink('');
+                    setQrCodeUrl('');
+                    setAmount('');
+                    setMemo('');
+                    setExpiresIn('');
+                  }}
+                  className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Create Another
+                </button>
+                <Link
+                  href="/dashboard"
+                  className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors text-center"
+                >
+                  View Dashboard
+                </Link>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -90,6 +251,24 @@ export default function CreateRequest() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Link Expiration (Optional)
+                </label>
+                <select
+                  value={expiresIn}
+                  onChange={(e) => setExpiresIn(e.target.value)}
+                  className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="">Never expires</option>
+                  <option value="1">1 hour</option>
+                  <option value="6">6 hours</option>
+                  <option value="24">24 hours</option>
+                  <option value="168">7 days</option>
+                  <option value="720">30 days</option>
+                </select>
+              </div>
+
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-600">Your Address</span>
@@ -105,9 +284,10 @@ export default function CreateRequest() {
 
               <button
                 type="submit"
-                className="w-full bg-primary-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-primary-700 transition-colors shadow-lg"
+                disabled={isCreating}
+                className="w-full bg-primary-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-primary-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Generate Payment Request
+                {isCreating ? 'Creating...' : 'Generate Payment Request'}
               </button>
             </form>
           </div>

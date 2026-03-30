@@ -25,12 +25,24 @@ export default function Home() {
           </p>
 
           {isConnected ? (
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <Link
                 href="/request/create"
                 className="bg-white text-primary-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-50 transition-colors shadow-lg"
               >
                 Request Payment
+              </Link>
+              <Link
+                href="/dashboard"
+                className="bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/settings"
+                className="bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-colors"
+              >
+                Settings
               </Link>
             </div>
           ) : (

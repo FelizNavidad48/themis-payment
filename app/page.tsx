@@ -6,12 +6,14 @@ import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { isConnected, status } = useAccount();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const isLoading = !mounted || status === 'connecting' || status === 'reconnecting';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
@@ -30,7 +32,7 @@ export default function Home() {
             Powered by blockchain technology.
           </p>
 
-          {!mounted ? (
+          {isLoading ? (
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 max-w-md mx-auto">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>

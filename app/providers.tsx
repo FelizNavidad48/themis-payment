@@ -40,10 +40,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     const originalError = console.error;
     console.error = (...args) => {
+      const firstArg = args[0];
       if (
-        typeof args[0] === 'string' &&
-        (args[0].includes('No matching key') ||
-         args[0].includes('history:'))
+        (typeof firstArg === 'string' && (
+          firstArg.includes('No matching key') ||
+          firstArg.includes('history:')
+        )) ||
+        (firstArg?.message && typeof firstArg.message === 'string' && (
+          firstArg.message.includes('No matching key') ||
+          firstArg.message.includes('history:')
+        ))
       ) {
         return;
       }

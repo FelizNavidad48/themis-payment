@@ -3,11 +3,14 @@ import { SiweMessage } from 'siwe';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
-const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+  return createClient<Database>(supabaseUrl, supabaseAnonKey);
+}
 
 export async function POST(request: NextRequest) {
+  const supabase = getSupabaseClient();
   try {
     const { message, signature } = await request.json();
 

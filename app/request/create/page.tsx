@@ -58,22 +58,26 @@ export default function CreateRequest() {
       await QRCode.toCanvas(qrCanvas, fullUrl, { width: 256 });
       const qrDataUrl = qrCanvas.toDataURL();
 
-      const { data, error } = await supabase.from('payment_links').insert({
-        creator_wallet_address: address.toLowerCase(),
-        recipient_wallet_address: address.toLowerCase(),
-        amount: amount,
-        memo: memo || null,
-        short_url: shortUrl,
-        qr_code_url: qrDataUrl,
-        expires_at: expiresAt,
-        status: 'active',
-      }).select().single();
+      const response = await fetch('/api/payment-links/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amount,
+          memo: memo || null,
+          shortUrl: shortUrl,
+          qrCodeUrl: qrDataUrl,
+          expiresAt: expiresAt,
+        }),
+      });
 
-      if (error) {
-        console.error('Supabase error:', error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Create payment link error:', errorData);
         alert('Failed to create payment link. Please try again.');
         return;
       }
+
+      const { data } = await response.json();
 
       setPaymentLink(fullUrl);
       setQrCodeUrl(qrDataUrl);

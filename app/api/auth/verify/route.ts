@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SiweMessage } from 'siwe';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '@/types/database';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 export async function POST(request: NextRequest) {
   try {
     const { message, signature } = await request.json();
 
     const nonce = request.cookies.get('siwe-nonce')?.value;
+
     if (!nonce) {
       return NextResponse.json(
         { error: 'Nonce not found' },
@@ -14,33 +20,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create SiweMessage from the EXACT message text that was signed
     const siweMessage = new SiweMessage(message);
+
+    // Verify the signature
     const fields = await siweMessage.verify({ signature, nonce });
 
     if (!fields.success) {
+      console.error('Verification failed:', fields.error);
       return NextResponse.json(
-        { error: 'Verification failed' },
+        { error: 'Verification failed', details: fields.error?.type },
         { status: 401 }
       );
     }
 
     const walletAddress = fields.data.address.toLowerCase();
 
-    const { data: user, error } = await supabase
+    const { error: upsertError } = await supabase
       .from('users')
-      .upsert(
-        { wallet_address: walletAddress },
-        { onConflict: 'wallet_address' }
-      )
-      .select()
-      .single();
+      .upsert({ wallet_address: walletAddress }, { onConflict: 'wallet_address', ignoreDuplicates: true });
 
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Database error' },
-        { status: 500 }
-      );
+    if (upsertError) {
+      console.error('Supabase error:', upsertError);
     }
 
     return NextResponse.json(

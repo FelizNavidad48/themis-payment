@@ -36,9 +36,9 @@ export async function POST(request: NextRequest) {
 
     const walletAddress = fields.data.address.toLowerCase();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     const { error: upsertError } = await (supabase
       .from('users')
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
       .upsert as Function)({ wallet_address: walletAddress }, { onConflict: 'wallet_address', ignoreDuplicates: true });
 
     if (upsertError) {

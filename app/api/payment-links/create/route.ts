@@ -1,25 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database';
-
-function getSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-    },
-  });
-}
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
 
     // Get session from cookie
     const session = request.cookies.get('siwe-session')?.value;
@@ -36,9 +19,9 @@ export async function POST(request: NextRequest) {
     const { amount, memo, shortUrl, qrCodeUrl, expiresAt } = await request.json();
 
     // First, ensure the user exists (using upsert to avoid duplicate key errors)
-    const { error: upsertError } = await (supabase
+    const { error: upsertError } = await supabase
       .from('users')
-      .upsert as Function)(
+      .upsert(
         { wallet_address: walletAddress },
         { onConflict: 'wallet_address', ignoreDuplicates: true }
       );

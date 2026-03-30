@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { config } from '@/lib/wagmi';
+import { polygon } from 'wagmi/chains';
 
 import '@rainbow-me/rainbowkit/styles.css';
 
@@ -37,39 +38,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     setMounted(true);
-
-    const originalError = console.error;
-    console.error = (...args) => {
-      const firstArg = args[0];
-      if (
-        (typeof firstArg === 'string' && (
-          firstArg.includes('No matching key') ||
-          firstArg.includes('history:')
-        )) ||
-        (firstArg?.message && typeof firstArg.message === 'string' && (
-          firstArg.message.includes('No matching key') ||
-          firstArg.message.includes('history:')
-        ))
-      ) {
-        return;
-      }
-      originalError.apply(console, args);
-    };
-
-    return () => {
-      console.error = originalError;
-    };
   }, []);
 
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={config} reconnectOnMount={true}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme()}>
+        <RainbowKitProvider theme={darkTheme()} initialChain={polygon}>
           {mounted ? (
             children
           ) : (
-            <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center">
-              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center p-6">
+              <div className="w-full max-w-md space-y-4">
+                <div className="h-16 bg-white/10 rounded-xl animate-shimmer"></div>
+                <div className="h-16 bg-white/10 rounded-xl animate-shimmer" style={{ animationDelay: '0.1s' }}></div>
+                <div className="h-16 bg-white/10 rounded-xl animate-shimmer" style={{ animationDelay: '0.2s' }}></div>
+              </div>
             </div>
           )}
         </RainbowKitProvider>

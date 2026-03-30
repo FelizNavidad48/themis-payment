@@ -6,14 +6,19 @@ import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
 
 export default function Home() {
-  const { isConnected, status } = useAccount();
+  const { isConnected, isConnecting, isReconnecting } = useAccount();
   const [mounted, setMounted] = useState(false);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const timer = setTimeout(() => {
+      setInitialCheckDone(true);
+    }, 500);
+    return () => clearTimeout(timer);
   }, []);
 
-  const isLoading = !mounted || status === 'connecting' || status === 'reconnecting';
+  const isLoading = !mounted || isConnecting || isReconnecting || (!isConnected && !initialCheckDone);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
@@ -33,11 +38,10 @@ export default function Home() {
           </p>
 
           {isLoading ? (
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 max-w-md mx-auto">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <p className="text-white/80">Loading...</p>
-              </div>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <div className="h-[60px] w-[200px] bg-white/10 rounded-xl animate-shimmer"></div>
+              <div className="h-[60px] w-[140px] bg-white/10 rounded-xl animate-shimmer" style={{ animationDelay: '0.1s' }}></div>
+              <div className="h-[60px] w-[120px] bg-white/10 rounded-xl animate-shimmer" style={{ animationDelay: '0.2s' }}></div>
             </div>
           ) : isConnected ? (
             <div className="flex gap-4 justify-center flex-wrap">

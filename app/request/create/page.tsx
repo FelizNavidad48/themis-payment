@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { NavConnectButton } from '@/components/NavConnectButton';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
 import QRCode from 'qrcode';
@@ -225,7 +226,7 @@ export default function CreateRequest() {
         <Link href="/" className="text-2xl font-bold text-white">
           Themis
         </Link>
-        <ConnectButton />
+        <NavConnectButton />
       </nav>
 
       <main className="container mx-auto px-6 py-12">

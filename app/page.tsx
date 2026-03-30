@@ -1,6 +1,7 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { NavConnectButton } from '@/components/NavConnectButton';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
@@ -24,11 +25,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
       <nav className="p-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white">Themis</h1>
-        {!mounted ? (
-          <div className="h-10 w-[140px] bg-white/10 rounded-xl animate-shimmer"></div>
-        ) : (
-          <ConnectButton />
-        )}
+        <NavConnectButton />
       </nav>
 
       <main className="container mx-auto px-6 py-20">

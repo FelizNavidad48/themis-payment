@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { NavConnectButton } from '@/components/NavConnectButton';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useReadContract, useBalance } from 'wagmi';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -297,7 +298,7 @@ function PayRequestContent() {
         <Link href="/" className="text-2xl font-bold text-white">
           Themis
         </Link>
-        <ConnectButton />
+        <NavConnectButton />
       </nav>
 
       <main className="container mx-auto px-6 py-12">

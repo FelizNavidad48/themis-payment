@@ -144,7 +144,3 @@ pnpm lint     # Run ESLint
 ## License
 
 MIT
-
-## Capstone Project
-
-This project is part of the CP192 capstone "The Global Capital Expressway" by Diana Jing, exploring next-generation programmable cross-border payment infrastructure built on stablecoin rails.

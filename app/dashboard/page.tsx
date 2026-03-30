@@ -5,6 +5,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { NavConnectButton } from '@/components/NavConnectButton';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { shortenAddress } from '@/utils/format';
@@ -282,7 +283,7 @@ export default function Dashboard() {
                           onClick={() => {
                             const url = `${window.location.origin}/request/pay?link=${link.short_url}`;
                             navigator.clipboard.writeText(url);
-                            alert('Link copied to clipboard!');
+                            toast.success('Link copied to clipboard!');
                           }}
                           className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm"
                         >

@@ -5,6 +5,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { NavConnectButton } from '@/components/NavConnectButton';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -70,7 +71,7 @@ export default function CreateRequest() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Create payment link error:', errorData);
-        alert('Failed to create payment link. Please try again.');
+        toast.error('Failed to create payment link. Please try again.');
         return;
       }
 
@@ -168,7 +169,7 @@ export default function CreateRequest() {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(paymentLink);
-                    alert('Link copied to clipboard!');
+                    toast.success('Link copied to clipboard!');
                   }}
                   className="w-full bg-primary-600 text-white py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors"
                 >

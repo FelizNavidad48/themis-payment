@@ -1,5 +1,7 @@
 # Themis - Global P2P Payment Platform
 
+## Deployed App: https://themis-payment.vercel.app/dashboard
+
 A decentralized peer-to-peer payment platform for cross-border USDT transfers on Polygon.
 
 ## Features
